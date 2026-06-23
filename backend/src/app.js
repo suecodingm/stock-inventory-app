@@ -7,14 +7,11 @@ const productRoutes = require('./routes/productRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration - Allow requests from AWS instance
+// CORS Configuration - Use environment variable for frontend URL
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 const corsOptions = {
-  origin: [
-    'http://100.25.77.134:3000',
-    'http://localhost:3000',
-    'http://frontend:3000',
-    'http://stock_inventory_ui:3000'
-  ],
+  origin: FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -60,7 +57,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
-  console.log(`CORS enabled for: ${corsOptions.origin.join(', ')}`);
+  console.log(`CORS enabled for: ${FRONTEND_URL}`);
 });
 
 module.exports = app;
