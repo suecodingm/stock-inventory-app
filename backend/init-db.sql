@@ -1,9 +1,3 @@
--- Create database if not exists
-SELECT 'CREATE DATABASE stock_inventory' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'stock_inventory')\gexec
-
--- Connect to the stock_inventory database
-\c stock_inventory;
-
 -- Create stores table
 CREATE TABLE IF NOT EXISTS stores (
     id SERIAL PRIMARY KEY,
