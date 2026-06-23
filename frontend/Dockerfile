@@ -1,22 +1,22 @@
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with npm install instead of npm ci for better AWS compatibility
+# Install dependencies with npm install and legacy-peer-deps for AWS compatibility
 RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY src ./src
 COPY public ./public
 
-# Build the app
+# Build the app with CI=false to suppress warnings
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
