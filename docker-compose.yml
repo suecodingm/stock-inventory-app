@@ -36,7 +36,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-stockpass}
       DB_NAME: ${DB_NAME:-stock_inventory}
       PORT: 5000
-      CORS_ORIGIN: "http://100.25.77.134:3000"
     ports:
       - "5000:5000"
     depends_on:
