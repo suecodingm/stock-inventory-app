@@ -2,6 +2,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG REACT_APP_API_URL=http://100.25.77.134:5000
+
 # Copy package files
 COPY package*.json ./
 
@@ -12,8 +15,8 @@ RUN npm install --legacy-peer-deps
 COPY src ./src
 COPY public ./public
 
-# Build the app with CI=false to suppress warnings
-RUN npm run build
+# Build the app with CI=false to suppress warnings and pass API URL
+RUN REACT_APP_API_URL=${REACT_APP_API_URL} npm run build
 
 # Production stage
 FROM node:20-alpine
