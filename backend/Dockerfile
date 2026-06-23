@@ -1,11 +1,11 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with npm install instead of npm ci for better AWS compatibility
+# Install dependencies with npm install and legacy-peer-deps for AWS compatibility
 RUN npm install --legacy-peer-deps
 
 # Copy application code
