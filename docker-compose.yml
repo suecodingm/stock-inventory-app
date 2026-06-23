@@ -36,6 +36,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-stockpass}
       DB_NAME: ${DB_NAME:-stock_inventory}
       PORT: 5000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - "5000:5000"
     depends_on:
@@ -51,10 +52,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_URL: "http://100.25.77.134:5000"
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000}
     container_name: stock_inventory_ui
     environment:
-      REACT_APP_API_URL: "http://100.25.77.134:5000"
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000}
     ports:
       - "3000:3000"
     depends_on:
