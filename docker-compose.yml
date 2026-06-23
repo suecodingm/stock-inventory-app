@@ -13,9 +13,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-stockuser}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-stockuser} -d ${DB_NAME:-stock_inventory}"]
       interval: 10s
       timeout: 5s
       retries: 5
