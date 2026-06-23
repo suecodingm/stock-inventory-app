@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: stock_inventory_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-stockuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-stockpass}
+      POSTGRES_DB: ${DB_NAME:-stock_inventory}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-stockuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stock_network
+
+  # Node.js Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stock_inventory_api
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-stockuser}
+      DB_PASSWORD: ${DB_PASSWORD:-stockpass}
+      DB_NAME: ${DB_NAME:-stock_inventory}
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - stock_network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stock_inventory_ui
+    environment:
+      REACT_APP_API_URL: http://backend:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+    networks:
+      - stock_network
+
+volumes:
+  postgres_data:
+
+networks:
+  stock_network:
+    driver: bridge
