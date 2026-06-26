@@ -1,48 +1,22 @@
 const Product = require('../models/Product');
-
-// Simple SKU heuristic: uppercase letters/numbers with optional hyphens (no spaces)
-const isLikelySku = (value) => /^[A-Za-z0-9-]+$/.test(value) && /[0-9]/.test(value);
-
-const countDigits = (value) => (value.match(/\d/g) || []).length;
+const { validateProductQuery } = require('../validators/productQuery');
 
 // Search products by name or SKU
 exports.searchProducts = async (req, res) => {
   try {
     const { query } = req.query;
+    const validation = validateProductQuery(query);
 
-    if (!query || query.trim() === '') {
-      return res.status(400).json({
-        error: 'Search query is required',
-        example: '/api/products/search?query=laptop'
-      });
+    if (!validation.ok) {
+      return res.status(validation.status).json(validation.body);
     }
 
-    // Normalize incoming query (removes leading/trailing spaces)
-    const trimmedQuery = query.trim();
-
-    // Allow only letters, numbers, and hyphen
-    const validQueryPattern = /^[A-Za-z0-9-]+$/;
-    if (!validQueryPattern.test(trimmedQuery)) {
-      return res.status(400).json({
-        error: 'Invalid search query. Use only letters, numbers, and hyphen (-).',
-        query: query
-      });
-    }
-
-    // If query looks like SKU, enforce at least 4 digits
-    if (isLikelySku(trimmedQuery) && countDigits(trimmedQuery) < 4) {
-      return res.status(400).json({
-        error: 'Invalid SKU. SKU must contain at least 4 digits.',
-        query: trimmedQuery
-      });
-    }
-
-    const products = await Product.search(trimmedQuery);
+    const products = await Product.search(validation.normalized);
 
     if (products.length === 0) {
       return res.status(404).json({
         message: 'No products found',
-        query: trimmedQuery
+        query: validation.normalized
       });
     }
 
@@ -61,18 +35,15 @@ exports.getProductStores = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate product ID
     if (!id || isNaN(id)) {
       return res.status(400).json({ error: 'Valid product ID is required' });
     }
 
-    // Check if product exists
     const product = await Product.getById(id);
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Get stores with stock
     const stores = await Product.getStoresWithStock(id);
 
     res.status(200).json({
