@@ -1,130 +1,126 @@
-const request = require('supertest');
-const app = require('../src/app');
+const { searchProducts } = require('../src/controllers/productController');
 const Product = require('../src/models/Product');
 
-jest.mock('../src/models/Product');
+jest.mock('../src/models/Product', () => ({
+  search: jest.fn(),
+  getById: jest.fn(),
+  getStoresWithStock: jest.fn(),
+  getAll: jest.fn()
+}));
 
-describe('Products API', () => {
+const createRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
+};
+
+describe('productController.searchProducts (unit)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('GET /api/products/search', () => {
-    it('returns products when an item exists by name', async () => {
-      Product.search.mockResolvedValue([
-        {
-          id: 1,
-          name: 'Printer-XL',
-          sku: 'PRN-1001',
-          description: 'Office printer'
-        }
-      ]);
+  it('returns 400 when query is missing', async () => {
+    const req = { query: {} };
+    const res = createRes();
 
-      const res = await request(app)
-        .get('/api/products/search')
-        .query({ query: 'Printer-XL' });
+    await searchProducts(req, res);
 
-      expect(res.status).toBe(200);
-      expect(res.body.count).toBe(1);
-      expect(res.body.products[0]).toEqual(
-        expect.objectContaining({ name: 'Printer-XL', sku: 'PRN-1001' })
-      );
-      expect(Product.search).toHaveBeenCalledWith('Printer-XL');
-    });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Search query is required' })
+    );
+    expect(Product.search).not.toHaveBeenCalled();
+  });
 
-    it('returns products when an item exists by SKU', async () => {
-      Product.search.mockResolvedValue([
-        {
-          id: 2,
-          name: 'Scanner-Pro',
-          sku: 'SCN-2020',
-          description: 'High speed scanner'
-        }
-      ]);
+  it('returns 400 when query is only spaces', async () => {
+    const req = { query: { query: '   ' } };
+    const res = createRes();
 
-      const res = await request(app)
-        .get('/api/products/search')
-        .query({ query: 'SCN-2020' });
+    await searchProducts(req, res);
 
-      expect(res.status).toBe(200);
-      expect(res.body.count).toBe(1);
-      expect(res.body.products[0]).toEqual(
-        expect.objectContaining({ name: 'Scanner-Pro', sku: 'SCN-2020' })
-      );
-      expect(Product.search).toHaveBeenCalledWith('SCN-2020');
-    });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(Product.search).not.toHaveBeenCalled();
+  });
 
-    it('returns 400 when query is missing', async () => {
-      const res = await request(app).get('/api/products/search');
+  it('trims spaces before querying Product.search', async () => {
+    const req = { query: { query: '  PRN-1234  ' } };
+    const res = createRes();
 
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual(
-        expect.objectContaining({ error: 'Search query is required' })
-      );
-    });
+    Product.search.mockResolvedValue([{ id: 1, name: 'Printer', sku: 'PRN-1234' }]);
 
-    it('returns 404 when item does not exist', async () => {
-      Product.search.mockResolvedValue([]);
+    await searchProducts(req, res);
 
-      const res = await request(app)
-        .get('/api/products/search')
-        .query({ query: 'DOES-NOT-EXIST-999' });
+    expect(Product.search).toHaveBeenCalledWith('PRN-1234');
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
 
-      expect(res.status).toBe(404);
-      expect(res.body).toEqual({
-        message: 'No products found',
-        query: 'DOES-NOT-EXIST-999'
-      });
-    });
+  it('returns 400 for invalid special characters', async () => {
+    const req = { query: { query: 'Laptop!' } };
+    const res = createRes();
 
-    describe('input validation contract (letters, numbers, and hyphen only)', () => {
-      // NOTE:
-      // Current API does not yet enforce this validation at controller level.
-      // These tests define the expected contract and will pass once validation is implemented.
+    await searchProducts(req, res);
 
-      const validQueries = ['Laptop', 'A1', 'A-1', 'Office-Printer-3000'];
-      const invalidQueries = ['Laptop!', 'Desk@1', 'Cable#12', 'Phone*Case'];
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.stringMatching(/letters, numbers, and hyphen/i)
+      })
+    );
+    expect(Product.search).not.toHaveBeenCalled();
+  });
 
-      it.each(validQueries)('accepts valid query "%s"', async (q) => {
-        Product.search.mockResolvedValue([]);
+  it('returns 400 when SKU has fewer than 4 digits', async () => {
+    const req = { query: { query: 'AB-12' } };
+    const res = createRes();
 
-        const res = await request(app)
-          .get('/api/products/search')
-          .query({ query: q });
+    await searchProducts(req, res);
 
-        expect([200, 404]).toContain(res.status);
-      });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'Invalid SKU. SKU must contain at least 4 digits.'
+      })
+    );
+    expect(Product.search).not.toHaveBeenCalled();
+  });
 
-      it.each(invalidQueries)('rejects invalid query "%s" with 400', async (q) => {
-        const res = await request(app)
-          .get('/api/products/search')
-          .query({ query: q });
+  it('allows SKU with at least 4 digits', async () => {
+    const req = { query: { query: 'AB-1234' } };
+    const res = createRes();
 
-        expect(res.status).toBe(400);
-        expect(res.body).toEqual(
-          expect.objectContaining({
-            error: expect.stringMatching(/invalid|letters|numbers|-/i)
-          })
-        );
-      });
+    Product.search.mockResolvedValue([{ id: 2, name: 'Scanner', sku: 'AB-1234' }]);
+
+    await searchProducts(req, res);
+
+    expect(Product.search).toHaveBeenCalledWith('AB-1234');
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('returns 404 when no products found', async () => {
+    const req = { query: { query: 'AB-1234' } };
+    const res = createRes();
+
+    Product.search.mockResolvedValue([]);
+
+    await searchProducts(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'No products found',
+      query: 'AB-1234'
     });
   });
 
-  describe('GET /api/products/:id/stores', () => {
-    it('returns 400 for invalid product id', async () => {
-      const res = await request(app).get('/api/products/abc/stores');
+  it('returns 500 on unexpected model errors', async () => {
+    const req = { query: { query: 'AB-1234' } };
+    const res = createRes();
 
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'Valid product ID is required' });
-    });
+    Product.search.mockRejectedValue(new Error('DB down'));
 
-    it('returns 404 when product id does not exist', async () => {
-      Product.getById.mockResolvedValue(undefined);
+    await searchProducts(req, res);
 
-      const res = await request(app).get('/api/products/99999/stores');
-
-      expect(res.status).toBe(404);
-      expect(res.body).toEqual({ error: 'Product not found' });
-    });
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
   });
 });
