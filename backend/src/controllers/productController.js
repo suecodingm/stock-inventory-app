@@ -12,12 +12,23 @@ exports.searchProducts = async (req, res) => {
       });
     }
 
-    const products = await Product.search(query);
+    // Validate search query: allow only letters, numbers, and hyphens
+    const trimmedQuery = query.trim();
+    const validQueryPattern = /^[A-Za-z0-9-]+$/;
+
+    if (!validQueryPattern.test(trimmedQuery)) {
+      return res.status(400).json({
+        error: 'Invalid search query. Use only letters, numbers, and hyphen (-).',
+        query: query
+      });
+    }
+
+    const products = await Product.search(trimmedQuery);
 
     if (products.length === 0) {
       return res.status(404).json({
         message: 'No products found',
-        query: query
+        query: trimmedQuery
       });
     }
 
