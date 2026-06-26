@@ -1,5 +1,10 @@
 const Product = require('../models/Product');
 
+// Simple SKU heuristic: uppercase letters/numbers with optional hyphens (no spaces)
+const isLikelySku = (value) => /^[A-Za-z0-9-]+$/.test(value) && /[0-9]/.test(value);
+
+const countDigits = (value) => (value.match(/\d/g) || []).length;
+
 // Search products by name or SKU
 exports.searchProducts = async (req, res) => {
   try {
@@ -12,14 +17,23 @@ exports.searchProducts = async (req, res) => {
       });
     }
 
-    // Validate search query: allow only letters, numbers, and hyphens
+    // Normalize incoming query (removes leading/trailing spaces)
     const trimmedQuery = query.trim();
-    const validQueryPattern = /^[A-Za-z0-9-]+$/;
 
+    // Allow only letters, numbers, and hyphen
+    const validQueryPattern = /^[A-Za-z0-9-]+$/;
     if (!validQueryPattern.test(trimmedQuery)) {
       return res.status(400).json({
         error: 'Invalid search query. Use only letters, numbers, and hyphen (-).',
         query: query
+      });
+    }
+
+    // If query looks like SKU, enforce at least 4 digits
+    if (isLikelySku(trimmedQuery) && countDigits(trimmedQuery) < 4) {
+      return res.status(400).json({
+        error: 'Invalid SKU. SKU must contain at least 4 digits.',
+        query: trimmedQuery
       });
     }
 
