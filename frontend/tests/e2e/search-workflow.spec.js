@@ -33,7 +33,7 @@ test('search no results shows empty-state message', async ({ page }) => {
   await page.getByPlaceholder(/search|name|sku/i).fill('DOES-NOT-EXIST-999');
   await page.getByRole('button', { name: /search/i }).click();
 
-  await expect(page.getByText(/no products found/i)).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText(/no products found/i);
 });
 
 test('invalid query shows validation message', async ({ page }) => {
@@ -49,5 +49,5 @@ test('invalid query shows validation message', async ({ page }) => {
   await page.getByPlaceholder(/search|name|sku/i).fill('Laptop!');
   await page.getByRole('button', { name: /search/i }).click();
 
-  await expect(page.getByText(/invalid search query/i)).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText(/invalid search query/i);
 });
