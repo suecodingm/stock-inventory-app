@@ -1,0 +1,25 @@
+# Tests Requirements (Linux)
+
+This document lists required dependencies to run project tests successfully on Linux.
+
+## 1) Core requirements
+
+- Linux machine (Ubuntu/Debian/Fedora/Amazon Linux)
+- Git
+- Node.js **18.x** (recommended)
+- npm **9.x or newer**
+- Internet access for first-time dependency/browser install
+
+Check versions:
+
+```bash
+node -v
+npm -v
+git --version
+
+Mandatory for this project environment
+Docker Engine
+Docker Compose plugin
+Running containers:
+frontend service (port 3000)
+backend service (port 5000)
