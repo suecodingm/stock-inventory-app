@@ -1,0 +1,122 @@
+# Tests Manual
+
+This manual explains how to run all tests for the **Stock Inventory App** on Linux.
+
+## 1) Test types in this project
+
+The project currently uses **JavaScript-based testing** (not Python):
+
+- **Backend unit/API tests**: Jest
+- **Frontend tests**: React Scripts test runner (Jest under the hood)
+- **End-to-end (E2E) tests**: Playwright
+
+---
+
+## 2) Repository structure (relevant parts)
+
+- `backend/`
+  - `package.json`
+  - `jest.config.js`
+  - `tests/*.unit.test.js`
+  - `tests/*.api.test.js`
+- `frontend/`
+  - `package.json`
+  - `tests/e2e/*.spec.js`
+  - `src/...`
+
+---
+
+## 3) Backend tests (Jest)
+
+From the backend folder:
+
+```bash
+cd backend
+npm install
+```
+
+Available commands:
+
+```bash
+npm test            # Run all backend tests
+npm run test:unit   # Run unit tests only
+npm run test:api    # Run API tests only
+npm run test:watch  # Watch mode
+npm run test:coverage
+```
+
+---
+
+## 4) Frontend tests (React/Jest)
+
+From the frontend folder:
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+---
+
+## 5) E2E tests (Playwright)
+
+From the frontend folder:
+
+```bash
+cd frontend
+npm install
+npm install --save-dev @playwright/test
+npx playwright install --with-deps
+npm run e2e
+```
+
+Optional headed/UI modes (if scripts exist):
+
+```bash
+npm run e2e:headed
+npm run e2e:ui
+```
+
+---
+
+## 6) If using Docker containers
+
+If app/test files changed, rebuild before testing:
+
+```bash
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+Then run tests again.
+
+---
+
+## 7) Common troubleshooting
+
+## A) `npm ERR! ENOTEMPTY ... rename ... node_modules/...`
+Clean and reinstall:
+
+```bash
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm cache verify
+npm install --no-audit --no-fund
+```
+
+## B) Playwright trace command says "too many arguments"
+You passed multiple files with wildcard. Use one file:
+
+```bash
+npx playwright show-trace "test-results/<single-test-folder>/trace.zip"
+```
+
+## C) `show-trace` fails on headless server/EC2
+Use artifacts instead:
+- `test-results/.../error-context.md`
+- `test-results/.../test-failed-1.png`
+- `test-results/.../video.webm`
+
+Or copy traces locally and open on
