@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Accept build argument for API URL
-ARG REACT_APP_API_URL=http://100.25.77.134:5000
+ARG REACT_APP_API_URL=http://44.198.56.147:5000
 
 # Copy package files
 COPY package*.json ./
